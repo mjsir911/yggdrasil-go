@@ -464,11 +464,11 @@ func (sinfo *sessionInfo) _recvPacket(p *wire_trafficPacket) {
 		return
 	}
 	k := sinfo.sharedSesKey
-	var isOK bool
+	var isOK bool = true
 	var bs []byte
 	ch := make(chan func(), 1)
 	poolFunc := func() {
-		bs, isOK = crypto.BoxOpen(&k, p.Payload, &p.Nonce)
+		bs = p.Payload
 		callback := func() {
 			util.PutBytes(p.Payload)
 			if !isOK || k != sinfo.sharedSesKey || !sinfo._nonceIsOK(&p.Nonce) {
@@ -508,10 +508,11 @@ func (sinfo *sessionInfo) _send(msg FlowKeyMessage) {
 		Nonce:  sinfo.myNonce,
 	}
 	sinfo.myNonce.Increment()
-	k := sinfo.sharedSesKey
+	// k := sinfo.sharedSesKey
 	ch := make(chan func(), 1)
 	poolFunc := func() {
-		p.Payload, _ = crypto.BoxSeal(&k, msg.Message, &p.Nonce)
+		p.Payload = msg.Message;
+		// p.Payload, _ = crypto.BoxSeal(&k, msg.Message, &p.Nonce)
 		callback := func() {
 			// Encoding may block on a util.GetBytes(), so kept out of the worker pool
 			packet := p.encode()
